@@ -24,7 +24,6 @@
                                   (setf (gethash mnemonic new-table) 1)))
                               new-table))
 
-;; We're going for a double pass assembler since that seems simpler to do; generating a table of address look-ups . May move to single pass
 ;; TODO add support for more useful features
 ;; TODO need to downcase all characters being read in and tokenized
 ;; TODO tokenize should accept a stream but it should not be responsible for setting up "with-open-file". Rather some external function should call tokenize within a with-open-file macro
@@ -68,16 +67,15 @@
 ;; TODO (note) adding expressions will change the way we translate addresses as we can have mathematical operators between parentheses
 (defun assemble (tokens)
   ;; TODO rename convert-address to something more appropriate
-  ;; TODO remove subseq and use key arguments as is done for absolute addressing
   ;; TODO add "is-indirect-p" argument to convert to initiate whether or not we are indirect addressing or not (all indirect address modes enclose their arguments in parens
-  (labels ((convert-address (address-string)
+  (labels ((convert-address (address-string &key indrect-mode register)
              (cond ((char= (aref address-string 0) #\#)
-                    `("-immediate" ,(parse-integer (subseq address-string 2) :radix 16)))
+                    `("-immediate" ,(parse-integer address-string :start 2 :radix 16)))
                    ((char= (aref address-string 0) #\a)
                     `("-accumulator"))
                    ((char= (aref address-string 0) #\$)
                     (if (= (length address-string) 3)
-                        `("-zero-page" ,(parse-integer (subseq address-string 1) :radix 16))
+                        `("-zero-page" ,(parse-integer address-string :start 1 :radix 16))
                         `("-absolute" (,(parse-integer address-string :start 3 :radix 16) ,(parse-integer address-string :start 1 :end 3 :radix 16)))))))
            (convert (tokens)
              ;; TODO handle branch opcodes separately

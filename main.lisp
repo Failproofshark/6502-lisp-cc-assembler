@@ -83,6 +83,7 @@
                           ,(parse-integer address-string :start 3 :radix 16) ,(parse-integer address-string :start 1 :end 3 :radix 16))))))
            (convert (tokens)
              ;; TODO handle branch opcodes separately
+             ;; TODO refactor the 4 and 5 opcode length code blocks
              (cond ((= 1 (length tokens))
                     `(,(gethash (car tokens) mnemonic-opcode-lookup)))
                    ((= 2 (length tokens))
@@ -96,8 +97,13 @@
                                                            (convert-address (cadr tokens) :register (cadddr tokens))))
                            (opcode (car tokens))
                            (completed-code (concatenate 'string opcode (car converted-address-and-mode))))
-                      (break)
-                      (append 'nil `(,(gethash completed-code mnemonic-opcode-lookup)) (cdr converted-address-and-mode)))))))
+                      (append 'nil `(,(gethash completed-code mnemonic-opcode-lookup)) (cdr converted-address-and-mode))))
+                   ((= 6 (length tokens))
+                    (let* ((opcode (car tokens))
+                           (completed-code (concatenate 'string opcode (if (equal (car (last tokens)) ")")                                                                                    "-indexed-indirect"
+                                                                           "-indirect-indexed"))))
+                      (format t "~a" completed-code)
+                      (append 'nil `(,(gethash completed-code mnemonic-opcode-lookup)) `(,(parse-integer (caddr tokens) :start 1 :radix 16))))))))
     (let ((buffer 'nil)
           (object-code 'nil))
       (loop for token = (car tokens) while token do
